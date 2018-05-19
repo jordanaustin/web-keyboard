@@ -7,7 +7,8 @@ class WebKeyboard extends LitElement {
         return {
             forceOpen: Boolean,
             open: Boolean,
-            scope: Object
+            scope: Object,
+            hapticFeedback: Boolean,
         }
     }
 
@@ -76,6 +77,9 @@ class WebKeyboard extends LitElement {
             };
 
             document.dispatchEvent(new KeyboardEvent('keypress',  detail));
+            if (navigator.vibrate) {
+                navigator.vibrate([5]);
+            }
         };
 
         const keys = root.querySelectorAll('.keyboard > button');
