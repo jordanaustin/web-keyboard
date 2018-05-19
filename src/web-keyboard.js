@@ -43,16 +43,10 @@ class WebKeyboard extends LitElement {
         });
 
         this.toggleNativeBtn = root.querySelector('.choose-keyboard');
-        this.toggleNativeBtn.addEventListener('click', (e) => {
+        this.toggleNativeBtn.addEventListener('mousedown', (e) => {
             e.preventDefault();
-            if (this.useWebKeyboard) {
-                this.useWebKeyboard = false;
-                this.closeKeyboard();
-            } else {
-                this.useWebKeyboard = true;
-                this.openKeyboard();
-            }
         });
+        this.toggleNativeBtn.addEventListener('click', this.chooseKeyboard.bind(this));
 
         document.addEventListener('keypress', (e) => {
             const input = this['priv'].activeInput;
@@ -97,6 +91,8 @@ class WebKeyboard extends LitElement {
         const resizeWrapper = (e) => {
             const yPos = e.touches ? e.touches[0].pageY : e.pageY;
             this.wrapperEl.style.top = `${yPos}px`;
+            e.stopPropagation();
+            e.preventDefault();
         };
 
         const resizer = this.wrapperEl.querySelector('.resizer');
@@ -143,10 +139,21 @@ class WebKeyboard extends LitElement {
     }
 
     chooseKeyboard() {
-        console.log('choose!');
+        this.useWebKeyboard = !this.useWebKeyboard;
+        this._updateInputMode();
+
+        if (!this.useWebKeyboard) {
+            this.closeKeyboard();
+        } else {
+            this.openKeyboard();
+        }
     }
 
-    _inputBinder(newInputs) {
+    _updateInputMode() {
+        this._inputs.forEach(input => input.setAttribute('inputmode', this.mode));
+    }
+
+    _inputBinder(newInputs = []) {
         this._inputs = [ ...this._inputs, ...newInputs ];
         newInputs.forEach((input) => {
             input.setAttribute('inputmode', this.mode);
@@ -155,7 +162,7 @@ class WebKeyboard extends LitElement {
                 this.openKeyboard();
             }, true);
 
-            input.addEventListener('blur', (e) => {
+            input.addEventListener('blur', () => {
                 if (this['priv'].activeInput === input) {
                     this['priv'].activeInput = null;
                 }
@@ -183,9 +190,16 @@ class WebKeyboard extends LitElement {
      }) {
         return html`
         <style>
+            .choose-keyboard {
+                bottom: 0;
+                position: fixed;
+                padding: 0.15em 0.25em;
+                z-index: 9999;
+            }
             .wrapper {
+                z-index: 9990;
                 display: none;
-                position: absolute;
+                position: fixed;
                 bottom: -2px;
                 max-height: 300px;
                 min-height: 20vh;
@@ -248,16 +262,14 @@ class WebKeyboard extends LitElement {
                 grid-column: 2 / span 2;
             }
         </style>
+        <button class="choose-keyboard">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+                <path d="M20 5H4c-1.1 0-1.99.9-1.99 2L2 17c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-9 3h2v2h-2V8zm0 3h2v2h-2v-2zM8 8h2v2H8V8zm0 3h2v2H8v-2zm-1 2H5v-2h2v2zm0-3H5V8h2v2zm9 7H8v-2h8v2zm0-4h-2v-2h2v2zm0-3h-2V8h2v2zm3 3h-2v-2h2v2zm0-3h-2V8h2v2z"/>
+                <path d="M0 0h24v24H0zm0 0h24v24H0z" fill="none"/>
+            </svg>
+        </button>
         <div class="wrapper">
         <div class="resizer"></div>
-        <section>
-            <button class="choose-keyboard">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-                    <path d="M20 5H4c-1.1 0-1.99.9-1.99 2L2 17c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-9 3h2v2h-2V8zm0 3h2v2h-2v-2zM8 8h2v2H8V8zm0 3h2v2H8v-2zm-1 2H5v-2h2v2zm0-3H5V8h2v2zm9 7H8v-2h8v2zm0-4h-2v-2h2v2zm0-3h-2V8h2v2zm3 3h-2v-2h2v2zm0-3h-2V8h2v2z"/>
-                    <path d="M0 0h24v24H0zm0 0h24v24H0z" fill="none"/>
-                </svg>
-            </button>
-        </section>
         <section class="keyboard">
             <button key-code="69" class="e">e</button>
             <button key-code="55">7</button>

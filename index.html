@@ -21,7 +21,7 @@
         text-transform: uppercase;
         font-family: Arial, Helvetica, sans-serif;
         font-weight: bold;
-        font-size: 4em;;
+        font-size: 4em;
         text-justify:auto;
         grid-column: 1 / span 5;
         padding: 0.25em;
@@ -43,6 +43,28 @@
         grid-column-gap: 0.25em;
         grid-row-gap: 0.25em;
         padding: 1em;
+        max-height: calc(100vh - 2em);
+        overflow: auto;
+    }
+
+    @media (max-width: 800px) {
+        h1 {
+            font-size: 2em;
+            grid-column: 1 / span 2;
+        }
+        .input-holder {
+            grid-template-columns: 50fr 50fr;
+        }
+    }
+
+    @media (max-width: 500px) {
+        h1 {
+            font-size: 1.25em;
+            grid-column: 1;
+        }
+        .input-holder {
+            grid-template-columns: 100fr;
+        }
     }
 </style>
 <script src="src/web-keyboard.js" type="module"></script>
