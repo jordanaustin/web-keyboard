@@ -11,15 +11,80 @@
         height: 100vh;
         margin: 0;
         padding: 0;
+        background: rgb(241, 241, 241);
+    }
+    input {
+        font-size: 1.25em;
+    }
+
+    h1 {
+        text-transform: uppercase;
+        font-family: Arial, Helvetica, sans-serif;
+        font-weight: bold;
+        font-size: 4em;;
+        text-justify:auto;
+        grid-column: 1 / span 5;
+        padding: 0.25em;
+        background: url('assets/keyboard.jpg') center;
+        background-clip: text;
+        color: rgba(0,0,0,0.4);
+        text-align: center;
+        margin: 0;
+        background-size: 100%;
+        margin: auto;
+        width: 75vw;
+        background-clip: text;
+        -webkit-background-clip: text;
+    }
+
+    .input-holder {
+        display: grid;
+        grid-template-columns: 20fr 20fr 20fr 20fr 20fr;
+        grid-column-gap: 0.25em;
+        grid-row-gap: 0.25em;
+        padding: 1em;
     }
 </style>
-<script src="web-keyboard.js" type="module"></script>
+<script src="src/web-keyboard.js" type="module"></script>
 <body>
-    <input type="text">
-    <input type="text">
-    <input type="text">
-    <input type="text">
-    <input type="text">
+    <section class="input-holder">
+        <h1>Pure javascript based virtual keyboard!</h1>
+        <input type="text">
+        <input type="text">
+        <input type="text">
+        <input type="text">
+        <input type="text">
+
+        <input type="text">
+        <input type="text">
+        <input type="text">
+        <input type="text">
+        <input type="text">
+
+        <input type="text">
+        <input type="text">
+        <input type="text">
+        <input type="text">
+        <input type="text">
+
+        <input type="text">
+        <input type="text">
+        <input type="text">
+        <input type="text">
+        <input type="text">
+
+        <input type="text">
+        <input type="text">
+        <input type="text">
+        <input type="text">
+        <input type="text">
+
+        <textarea></textarea>
+        <textarea></textarea>
+        <textarea></textarea>
+        <textarea></textarea>
+        <textarea></textarea>
+    </section>
     <web-keyboard force-open="false"></web-keyboard>
 </body>
 </html>
