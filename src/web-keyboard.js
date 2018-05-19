@@ -8,7 +8,10 @@ class WebKeyboard extends LitElement {
             forceOpen: Boolean,
             open: Boolean,
             scope: Object,
-            hapticFeedback: Boolean,
+            hapticFeedback: {
+                type: Boolean,
+                value: true
+            ,}
         }
     }
 
@@ -49,46 +52,45 @@ class WebKeyboard extends LitElement {
         });
         this.toggleNativeBtn.addEventListener('click', this.chooseKeyboard.bind(this));
 
-        document.addEventListener('keypress', (e) => {
-            const input = this['priv'].activeInput;
+        document.body.addEventListener('keypress', (e) => {
+            if (!e.isTrusted) {
+                const input = this['priv'].activeInput;
+                const { charCode, key, keyCode, shiftKey, which } = e;
 
-            if (e.keyCode === 8) {
-                const curValue = input.value;
-                const end = input.selectionEnd;
-                const start = input.selectionStart;
-                const count = (start === end) ? 1 : 0;
+                if (keyCode === 8) {
+                    const curValue = input.value;
+                    const end = input.selectionEnd;
+                    const start = input.selectionStart;
+                    const count = (start === end) ? 1 : 0;
 
-                const modStart = (start - count) < 0 ? 0 : start - count;
+                    const modStart = (start - count) < 0 ? 0 : start - count;
 
-                input.value = curValue.slice(0, modStart) + curValue.slice(end, curValue.length)
-                input.setSelectionRange(modStart, modStart);
-            } else {
-                this['priv'].activeInput.value += e.key;
+                    input.value = curValue.slice(0, modStart) + curValue.slice(end, curValue.length)
+                    input.setSelectionRange(modStart, modStart);
+                } else {
+                    this['priv'].activeInput.value += key;
+                }
             }
         });
 
-        const dispatchKeyClick = ({ key, keyCode, shiftKey }) => {
-            const detail = {
-                charCode: keyCode,
-                key,
-                keyCode,
-                shiftKey,
-                which: keyCode
-            };
-
-            document.dispatchEvent(new KeyboardEvent('keypress',  detail));
+        const dispatchKeyClick = ({ key, keyCode, shiftKey, eventName }) => {
+            const detail = { key, keyCode, shiftKey };
+            document.body.dispatchEvent(new KeyboardEvent(eventName,  detail));
             if (navigator.vibrate) {
                 navigator.vibrate([5]);
             }
         };
 
-        const keys = root.querySelectorAll('.keyboard > button');
-        keys.forEach((key) => {
-            key.addEventListener('click', (event) => {
+        const keyEls = root.querySelectorAll('.keyboard > button');
+        keyEls.forEach((keyEl) => {
+            keyEl.addEventListener('click', (event) => {
                 const keyCode = parseInt(event.target.getAttribute('key-code'));
                 const shiftKey = event.target.getAttribute('shift-key');
-                const key = event.target.textContent;
-                dispatchKeyClick({ keyCode, shiftKey, key });
+                const key = event.target.getAttribute('key');
+                const isEnterKey = (keyCode === 13);
+                const eventName = isEnterKey ? 'keydown' : 'keypress';
+
+                dispatchKeyClick({ keyCode, shiftKey, key, eventName });
             });
         });
 
@@ -199,26 +201,24 @@ class WebKeyboard extends LitElement {
                 position: fixed;
                 padding: 0.15em 0.25em;
                 z-index: 9999;
+                fill: white;
+                border: none;
+                background: rgb(45,45,45);
             }
             .wrapper {
                 z-index: 9990;
                 display: none;
                 position: fixed;
-                bottom: -2px;
-                max-height: 300px;
-                min-height: 20vh;
+                bottom: 0;
+                max-height: 50vh;
+                min-height: 33vh;
                 width: 100%;
                 justify-content: center;
-                background: black;
-                margin-top: 4px;
+                background: rgba(0,0,0,0.9);
                 will-change: transform, top;
                 transform: translateY(110vh);
                 transition: transform 300ms ease-in-out;
                 box-shadow: 0px 0px 20px 0px rgba(0, 0, 0, 0.24);
-                opacity: 0.75;
-                border-top: 2px solid rgba(77, 77, 77, 0.4);
-                border-bottom: 2px solid rgba(77, 77, 77, 0.4);
-                padding-bottom: 8px;
                 pointer-events: none;
             }
 
@@ -236,12 +236,28 @@ class WebKeyboard extends LitElement {
             }
 
             .keyboard {
-                margin-top: 8px;
                 display: grid;
                 min-width: 300px;
                 grid-template-columns: 20fr 20fr 20fr 20fr 20fr;
                 grid-column-gap: 1px;
                 grid-row-gap: 1px;
+            }
+
+            .keyboard > button {
+                color: white;
+                font-size: 1.15em;
+                background: rgb(65,65,65);
+                border: none;
+                // border-color: rgba(200,200,200,0.8);
+            }
+
+            .keyboard > button.darker {
+                background: rgb(45,45,45);
+            }
+
+            .keyboard > button:active,
+            .down {
+                background: rgb(55,55,55);
             }
 
             .e {
@@ -275,22 +291,22 @@ class WebKeyboard extends LitElement {
         <div class="wrapper">
         <div class="resizer"></div>
         <section class="keyboard">
-            <button key-code="69" class="e">e</button>
-            <button key-code="55">7</button>
-            <button key-code="6">8</button>
-            <button key-code="57">9</button>
-            <button key-code="52">4</button>
-            <button key-code="53">5</button>
-            <button key-code="54">6</button>
-            <button key-code="189">-</button>
-            <button key-code="49">1</button>
-            <button key-code="50">2</button>
-            <button key-code="51">3</button>
-            <button key-code="8" class="del">DEL</button>
-            <button key-code="187" shift-key="true" class="plus">+</button>
-            <button key-code="48" class="zero">0</button>
-            <button key-code="190">.</button>
-            <button key-code="13" class="return">⏎</button>
+            <button key-code="69" key="e" class="e darker">e</button>
+            <button key-code="55" key="7">7</button>
+            <button key-code="6" key="8">8</button>
+            <button key-code="57" key="9">9</button>
+            <button key-code="52" key="4">4</button>
+            <button key-code="53" key="5">5</button>
+            <button key-code="54" key="6">6</button>
+            <button key-code="189" key="-" class="darker">-</button>
+            <button key-code="49" key="1">1</button>
+            <button key-code="50" key="2">2</button>
+            <button key-code="51" key="3">3</button>
+            <button key-code="8" key="Backspace" class="del darker">DEL</button>
+            <button key-code="187" key="+" shift-key="true" class="plus darker">+</button>
+            <button key-code="48" key="0" class="zero">0</button>
+            <button key-code="190" key=".">.</button>
+            <button key-code="13" key="Enter" class="return darker">⏎</button>
         </section>
     </div>`;
     }
