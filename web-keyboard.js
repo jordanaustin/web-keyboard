@@ -30,7 +30,7 @@ class WebKeyboard extends LitElement {
         super.connectedCallback();
         if (!this.scope) this.scope = document.body;
         // start observing the scope for new inputs
-        this._inputBinder(document.querySelectorAll('input'));
+        this._inputBinder(document.querySelectorAll('input, textarea'));
         this.inputObserver.observe(this.scope, { childList: true});
 
         await this.renderComplete;
@@ -96,7 +96,7 @@ class WebKeyboard extends LitElement {
 
         const resizeWrapper = (e) => {
             const yPos = e.touches ? e.touches[0].pageY : e.pageY;
-            wrapperEl.style.top = `${yPos}px`;
+            this.wrapperEl.style.top = `${yPos}px`;
         };
 
         const resizer = this.wrapperEl.querySelector('.resizer');
@@ -166,9 +166,16 @@ class WebKeyboard extends LitElement {
     }
 
     _muCallback(mutationsList) {
+        let newInputs = [];
         for (let mutation of mutationsList) {
-            this._inputBinder(mutation.addedNodes);
+            for (let node of mutation.addedNodes) {
+                if (node.nodeName === 'TEXTAREA' || node.nodeName === 'INPUT') {
+                    newInputs.push(node);
+                }
+            }
         }
+
+        this._inputBinder(newInputs);
     }
 
     _render({
@@ -191,8 +198,8 @@ class WebKeyboard extends LitElement {
                 transition: transform 300ms ease-in-out;
                 box-shadow: 0px 0px 20px 0px rgba(0, 0, 0, 0.24);
                 opacity: 0.75;
-                border-top: 2px solid teal;
-                border-bottom: 2px solid teal;
+                border-top: 2px solid rgba(77, 77, 77, 0.4);
+                border-bottom: 2px solid rgba(77, 77, 77, 0.4);
                 padding-bottom: 8px;
                 pointer-events: none;
             }
