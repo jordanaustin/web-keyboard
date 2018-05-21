@@ -1,6 +1,6 @@
 import {LitElement, html} from 'https://unpkg.com/@polymer/lit-element@latest/lit-element.js?module';
 
-const priv = Symbol['priv'];
+let _keyboardTimer = null;
 
 class WebKeyboard extends LitElement {
     static get properties() {
@@ -8,6 +8,7 @@ class WebKeyboard extends LitElement {
             forceOpen: Boolean,
             open: Boolean,
             scope: Object,
+            canResize: Boolean,
             hapticFeedback: {
                 type: Boolean,
                 value: true
@@ -22,12 +23,11 @@ class WebKeyboard extends LitElement {
     constructor() {
         super();
         this._inputs = [];
-        this['priv'] = {
-            requestedKeyboardOpen: false,
-            keyboardTimer: null
-        };
+
+        this.canResize = false;
         this.useWebKeyboard = true;
         this.inputObserver = new MutationObserver(this._muCallback.bind(this));
+        document.body.addEventListener('keypress', e => this._onKeypress(e));
     }
 
     async connectedCallback() {
@@ -42,73 +42,49 @@ class WebKeyboard extends LitElement {
         const { shadowRoot: root } = this;
 
         this.wrapperEl = root.querySelector('.wrapper');
-        this.wrapperEl.addEventListener('mousedown', (e) => {
-            e.preventDefault()
-        });
-
         this.toggleNativeBtn = root.querySelector('.choose-keyboard');
-        this.toggleNativeBtn.addEventListener('mousedown', (e) => {
-            e.preventDefault();
-        });
-        this.toggleNativeBtn.addEventListener('click', this.chooseKeyboard.bind(this));
 
-        document.body.addEventListener('keypress', (e) => {
-            if (!e.isTrusted) {
-                const input = this['priv'].activeInput;
-                const { charCode, key, keyCode, shiftKey, which } = e;
-
-                if (keyCode === 8) {
-                    const curValue = input.value;
-                    const end = input.selectionEnd;
-                    const start = input.selectionStart;
-                    const count = (start === end) ? 1 : 0;
-
-                    const modStart = (start - count) < 0 ? 0 : start - count;
-
-                    input.value = curValue.slice(0, modStart) + curValue.slice(end, curValue.length)
-                    input.setSelectionRange(modStart, modStart);
-                } else {
-                    this['priv'].activeInput.value += key;
-                }
-            }
+        this.toggleNativeBtn.addEventListener('click', () => {
+            this._chooseKeyboard();
         });
 
-        const dispatchKeyClick = ({ key, keyCode, shiftKey, eventName }) => {
-            const detail = { key, keyCode, shiftKey };
-            document.body.dispatchEvent(new KeyboardEvent(eventName,  detail));
-            if (navigator.vibrate) {
-                navigator.vibrate([5]);
-            }
-        };
+        [this.wrapperEl, this.toggleNativeBtn].forEach((el) => {
+            el.addEventListener('mousedown', e => e.preventDefault());
+        });
 
         const keyEls = root.querySelectorAll('.keyboard > button');
         keyEls.forEach((keyEl) => {
             keyEl.addEventListener('click', (event) => {
+                event.preventDefault();
                 const keyCode = parseInt(event.target.getAttribute('key-code'));
                 const shiftKey = event.target.getAttribute('shift-key');
                 const key = event.target.getAttribute('key');
                 const isEnterKey = (keyCode === 13);
                 const eventName = isEnterKey ? 'keydown' : 'keypress';
 
-                dispatchKeyClick({ keyCode, shiftKey, key, eventName });
+                if (navigator.vibrate) {
+                    navigator.vibrate([15]);
+                }
+                document.body.dispatchEvent(new KeyboardEvent(eventName,  { key, keyCode, shiftKey }));
             });
         });
-
-        const resizeWrapper = (e) => {
-            const yPos = e.touches ? e.touches[0].pageY : e.pageY;
-            this.wrapperEl.style.top = `${yPos}px`;
-            e.stopPropagation();
-            e.preventDefault();
-        };
 
         const resizer = this.wrapperEl.querySelector('.resizer');
         const moveEvents = ['mousemove', 'touchmove'];
 
+        const resizeWrapperEl = (e) => {
+            if (this.canResize){
+                const yPos = e.touches ? e.touches[0].pageY : e.pageY;
+                this.wrapperEl.style.top = `${yPos}px`;
+                e.stopPropagation();
+            }
+        };
+
         ['mousedown', 'touchstart'].forEach(event => resizer.addEventListener(event, (e) => {
-            moveEvents.forEach(event => document.addEventListener(event, resizeWrapper));
+            moveEvents.forEach(moveEvent => document.addEventListener(moveEvent, resizeWrapperEl));
 
             ['mouseup', 'touchend'].forEach(event => document.addEventListener(event, (e) => {
-            moveEvents.forEach(event => document.removeEventListener(event, resizeWrapper));
+                moveEvents.forEach(moveEvent => document.removeEventListener(moveEvent, resizeWrapperEl));
             }));
         }));
     }
@@ -119,7 +95,7 @@ class WebKeyboard extends LitElement {
 
     openKeyboard() {
         const { useWebKeyboard, wrapperEl } = this;
-        this['priv'].requestedKeyboardOpen = true;
+        this._requestedKeyboardOpen = true;
 
         if (this.useWebKeyboard && !this.isOpen) {
             this.wrapperEl.style.display = 'flex';
@@ -131,10 +107,10 @@ class WebKeyboard extends LitElement {
     }
 
     closeKeyboard() {
-        this['priv'].requestedKeyboardOpen = false;
-        this['priv'].keyboardTimer = requestAnimationFrame(() => {
-            if (!this['priv'].requestedKeyboardOpen && !this.forceOpen) {
-                this['priv'].keyboardTimer = null;
+        this._requestedKeyboardOpen = false;
+        _keyboardTimer = requestAnimationFrame(() => {
+            if (!this._requestedKeyboardOpen && !this.forceOpen) {
+                _keyboardTimer = null;
                 this.wrapperEl.classList.remove('show');
                 setTimeout(() => {
                     this.isOpen = false;
@@ -144,7 +120,7 @@ class WebKeyboard extends LitElement {
         });
     }
 
-    chooseKeyboard() {
+    _chooseKeyboard() {
         this.useWebKeyboard = !this.useWebKeyboard;
         this._updateInputMode();
 
@@ -155,7 +131,32 @@ class WebKeyboard extends LitElement {
         }
     }
 
-    _updateInputMode() {
+    _onKeypress(e) {
+        if (!e.isTrusted) {
+            const input = this._activeInput;
+            const { charCode, key, keyCode, shiftKey, which } = e;
+
+            if (keyCode === 8) {
+                const curValue = input.value;
+                const end = input.selectionEnd;
+                const start = input.selectionStart;
+                const count = (start === end) ? 1 : 0;
+
+                const modStart = (start - count) < 0 ? 0 : start - count;
+
+                input.value = curValue.slice(0, modStart) + curValue.slice(end, curValue.length)
+                input.setSelectionRange(modStart, modStart);
+            } else {
+                this._activeInput.value += key;
+            }
+        }
+    }
+
+    async _updateInputMode() {
+        if (this._activeInput) {
+
+        }
+
         this._inputs.forEach(input => input.setAttribute('inputmode', this.mode));
     }
 
@@ -164,13 +165,13 @@ class WebKeyboard extends LitElement {
         newInputs.forEach((input) => {
             input.setAttribute('inputmode', this.mode);
             input.addEventListener('focus', () => {
-                this['priv'].activeInput = input;
+                this._activeInput = input;
                 this.openKeyboard();
             }, true);
 
             input.addEventListener('blur', () => {
-                if (this['priv'].activeInput === input) {
-                    this['priv'].activeInput = null;
+                if (this._activeInput === input) {
+                    this._activeInput = null;
                 }
 
                 this.closeKeyboard();
@@ -218,7 +219,6 @@ class WebKeyboard extends LitElement {
                 will-change: transform, top;
                 transform: translateY(110vh);
                 transition: transform 300ms ease-in-out;
-                box-shadow: 0px 0px 20px 0px rgba(0, 0, 0, 0.24);
                 pointer-events: none;
             }
 
