@@ -120,9 +120,9 @@ class WebKeyboard extends LitElement {
         });
     }
 
-    _chooseKeyboard() {
+    async _chooseKeyboard() {
         this.useWebKeyboard = !this.useWebKeyboard;
-        this._updateInputMode();
+        await this._updateInputMode();
 
         if (!this.useWebKeyboard) {
             this.closeKeyboard();
@@ -152,12 +152,15 @@ class WebKeyboard extends LitElement {
         }
     }
 
-    async _updateInputMode() {
-        if (this._activeInput) {
+    _updateInputMode() {
+        return new Promise ((resolve) => {
+            if (this._activeInput) {
+                this._activeInput.setAttribute('inputmode', this.mode);
+                resolve(); // resolve early if we have an active input so the current input can be edited quickly
+            }
 
-        }
-
-        this._inputs.forEach(input => input.setAttribute('inputmode', this.mode));
+            this._inputs.forEach(input => input.setAttribute('inputmode', this.mode));
+        });
     }
 
     _inputBinder(newInputs = []) {
