@@ -1,18 +1,13 @@
 import { LitElement, html } from 'https://unpkg.com/@polymer/lit-element@latest/lit-element.js?module';
 
-let _keyboardTimer = null;
-
 class WebKeyboard extends LitElement {
     static get properties() {
         return {
-            forceOpen: Boolean,
-            open: Boolean,
-            scope: Object,
-            canResize: Boolean,
-            hapticFeedback: {
-                type: Boolean,
-                value: true
-            ,}
+            alwaysOpen: { type: Boolean },
+            open: { type: Boolean },
+            scope: { type: Object },
+            canResize: { type: Boolean },
+            hapticFeedback: { type: Boolean }
         }
     }
 
@@ -23,9 +18,11 @@ class WebKeyboard extends LitElement {
     constructor() {
         super();
         this._inputs = [];
-
+        this._keyboardTimer = null;
         this.canResize = false;
         this.useWebKeyboard = true;
+        this.alwaysOpen = false;
+        this.hapticFeedback = navigator.vibrate;
         this.inputObserver = new MutationObserver(this._muCallback.bind(this));
         document.body.addEventListener('keypress', e => this._onKeypress(e));
     }
@@ -49,23 +46,6 @@ class WebKeyboard extends LitElement {
             el.addEventListener('mousedown', e => e.preventDefault());
         });
 
-        const keyEls = root.querySelectorAll('.keyboard > button');
-        keyEls.forEach((keyEl) => {
-            keyEl.addEventListener('click', (event) => {
-                event.preventDefault();
-                const keyCode = parseInt(event.target.getAttribute('key-code'));
-                const shiftKey = event.target.getAttribute('shift-key');
-                const key = event.target.getAttribute('key');
-                const isEnterKey = (keyCode === 13);
-                const eventName = isEnterKey ? 'keydown' : 'keypress';
-
-                if (navigator.vibrate) {
-                    navigator.vibrate([15]);
-                }
-                document.body.dispatchEvent(new KeyboardEvent(eventName,  { key, keyCode, shiftKey }));
-            });
-        });
-
         const resizer = this.wrapperEl.querySelector('.resizer');
         const moveEvents = ['mousemove', 'touchmove'];
 
@@ -84,6 +64,10 @@ class WebKeyboard extends LitElement {
                 moveEvents.forEach(moveEvent => document.removeEventListener(moveEvent, resizeWrapperEl));
             }));
         }));
+
+        if (this.alwaysOpen) {
+            this.openKeyboard();
+        }
     }
 
     disconnectedCallback() {
@@ -105,9 +89,9 @@ class WebKeyboard extends LitElement {
 
     closeKeyboard() {
         this._requestedKeyboardOpen = false;
-        _keyboardTimer = requestAnimationFrame(() => {
-            if (!this._requestedKeyboardOpen && !this.forceOpen) {
-                _keyboardTimer = null;
+        this._keyboardTimer = requestAnimationFrame(() => {
+            if (!this._requestedKeyboardOpen && !this.alwaysOpen) {
+                this._keyboardTimer = null;
                 this.wrapperEl.classList.remove('show');
                 setTimeout(() => {
                     this.isOpen = false;
@@ -126,6 +110,20 @@ class WebKeyboard extends LitElement {
         } else {
             this.openKeyboard();
         }
+    }
+
+    _clickHandler(event) {
+        event.preventDefault();
+        const keyCode = parseInt(event.target.getAttribute('key-code'));
+        const shiftKey = event.target.getAttribute('shift-key');
+        const key = event.target.getAttribute('key');
+        const isEnterKey = (keyCode === 13);
+        const eventName = isEnterKey ? 'keydown' : 'keypress';
+
+        if (this.hapticFeedback && navigator.vibrate) {
+            navigator.vibrate([15]);
+        }
+        document.body.dispatchEvent(new KeyboardEvent(eventName,  { key, keyCode, shiftKey }));
     }
 
     _onKeypress(e) {
@@ -280,7 +278,7 @@ class WebKeyboard extends LitElement {
                 grid-column: 2 / span 2;
             }
         </style>
-        <button class="choose-keyboard">
+        <button class="choose-keyboard" hidden="${this.alwaysOpen}">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
                 <path d="M20 5H4c-1.1 0-1.99.9-1.99 2L2 17c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-9 3h2v2h-2V8zm0 3h2v2h-2v-2zM8 8h2v2H8V8zm0 3h2v2H8v-2zm-1 2H5v-2h2v2zm0-3H5V8h2v2zm9 7H8v-2h8v2zm0-4h-2v-2h2v2zm0-3h-2V8h2v2zm3 3h-2v-2h2v2zm0-3h-2V8h2v2z"/>
                 <path d="M0 0h24v24H0zm0 0h24v24H0z" fill="none"/>
@@ -289,22 +287,22 @@ class WebKeyboard extends LitElement {
         <div class="wrapper">
         <div class="resizer"></div>
         <section class="keyboard">
-            <button key-code="69" key="e" class="e darker">e</button>
-            <button key-code="55" key="7">7</button>
-            <button key-code="6" key="8">8</button>
-            <button key-code="57" key="9">9</button>
-            <button key-code="52" key="4">4</button>
-            <button key-code="53" key="5">5</button>
-            <button key-code="54" key="6">6</button>
-            <button key-code="189" key="-" class="darker">-</button>
-            <button key-code="49" key="1">1</button>
-            <button key-code="50" key="2">2</button>
-            <button key-code="51" key="3">3</button>
-            <button key-code="8" key="Backspace" class="del darker">DEL</button>
-            <button key-code="187" key="+" shift-key="true" class="plus darker">+</button>
-            <button key-code="48" key="0" class="zero">0</button>
-            <button key-code="190" key=".">.</button>
-            <button key-code="13" key="Enter" class="return darker">⏎</button>
+            <button @click="${(event) => this._clickHandler(event)}" key-code="69" key="e" class="e darker">e</button>
+            <button @click="${(event) => this._clickHandler(event)}" key-code="55" key="7">7</button>
+            <button @click="${(event) => this._clickHandler(event)}" key-code="6" key="8">8</button>
+            <button @click="${(event) => this._clickHandler(event)}" key-code="57" key="9">9</button>
+            <button @click="${(event) => this._clickHandler(event)}" key-code="52" key="4">4</button>
+            <button @click="${(event) => this._clickHandler(event)}" key-code="53" key="5">5</button>
+            <button @click="${(event) => this._clickHandler(event)}" key-code="54" key="6">6</button>
+            <button @click="${(event) => this._clickHandler(event)}" key-code="189" key="-" class="darker">-</button>
+            <button @click="${(event) => this._clickHandler(event)}" key-code="49" key="1">1</button>
+            <button @click="${(event) => this._clickHandler(event)}" key-code="50" key="2">2</button>
+            <button @click="${(event) => this._clickHandler(event)}" key-code="51" key="3">3</button>
+            <button @click="${(event) => this._clickHandler(event)}" key-code="8" key="Backspace" class="del darker">DEL</button>
+            <button @click="${(event) => this._clickHandler(event)}" key-code="187" key="+" shift-key="true" class="plus darker">+</button>
+            <button @click="${(event) => this._clickHandler(event)}" key-code="48" key="0" class="zero">0</button>
+            <button @click="${(event) => this._clickHandler(event)}" key-code="190" key=".">.</button>
+            <button @click="${(event) => this._clickHandler(event)}" key-code="13" key="Enter" class="return darker">⏎</button>
         </section>
     </div>`;
     }
