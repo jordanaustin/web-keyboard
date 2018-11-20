@@ -1,0 +1,26 @@
+{
+  "name": "web-keyboard",
+  "version": "0.0.1",
+  "description": "Pure web based keyboard especially taylored for mobile devices to replace the horrible native virtual number keyboards",
+  "main": "dist/web-keyboard.js",
+  "scripts": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jordanaustin/web-keyboard.js.git"
+  },
+  "keywords": [
+    "keyboard",
+    "web-keybaord",
+    "javascript",
+    "webcomponent",
+    "customelement"
+  ],
+  "author": "Jordan Austin",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jordanaustin/web-keyboard.js/issues"
+  },
+  "homepage": "https://github.com/jordanaustin/web-keyboard.js#readme"
+}
