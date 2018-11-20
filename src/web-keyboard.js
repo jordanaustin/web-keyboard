@@ -1,4 +1,4 @@
-import {LitElement, html} from 'https://unpkg.com/@polymer/lit-element@latest/lit-element.js?module';
+import { LitElement, html } from 'https://unpkg.com/@polymer/lit-element@latest/lit-element.js?module';
 
 let _keyboardTimer = null;
 
@@ -30,14 +30,11 @@ class WebKeyboard extends LitElement {
         document.body.addEventListener('keypress', e => this._onKeypress(e));
     }
 
-    async connectedCallback() {
-        super.connectedCallback();
+    firstUpdated() {
         if (!this.scope) this.scope = document.body;
         // start observing the scope for new inputs
         this._inputBinder(document.querySelectorAll('input, textarea'));
         this.inputObserver.observe(this.scope, { childList: true});
-
-        await this.renderComplete;
 
         const { shadowRoot: root } = this;
 
@@ -97,8 +94,8 @@ class WebKeyboard extends LitElement {
         const { useWebKeyboard, wrapperEl } = this;
         this._requestedKeyboardOpen = true;
 
-        if (this.useWebKeyboard && !this.isOpen) {
-            this.wrapperEl.style.display = 'flex';
+        if (useWebKeyboard && !this.isOpen) {
+            wrapperEl.style.display = 'flex';
             requestAnimationFrame(() => {
                 this.isOpen = true;
                 this.wrapperEl.classList.add('show');
@@ -195,9 +192,7 @@ class WebKeyboard extends LitElement {
         this._inputBinder(newInputs);
     }
 
-    _render({
-        forceOpen
-     }) {
+    render() {
         return html`
         <style>
             .choose-keyboard {
